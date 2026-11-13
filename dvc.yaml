@@ -1,0 +1,9 @@
+stages:
+  train:
+    cmd: python -m training.train --data data/dataset.csv --metrics-out metrics.json
+    deps:
+      - data/dataset.csv
+      - training/train.py
+    metrics:
+      - metrics.json:
+          cache: false
