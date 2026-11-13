@@ -7,6 +7,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
+class ToolError(Exception):
+    """A tool failed in an expected way. The message is safe to show to the model."""
+
+
 @dataclass
 class ToolResult:
     """Uniform envelope returned by every tool. Failures are values, not exceptions."""
