@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# secrets and local config
+.env
+*.pem
+kubeconfig*
+.kube/
+
+# local ML and DVC state
+mlruns/
+mlartifacts/
+.dvc/cache/
+.dvc/tmp/
+.dvc-remote/
