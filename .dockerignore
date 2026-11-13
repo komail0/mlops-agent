@@ -1,0 +1,9 @@
+.venv/
+.git/
+.dvc/
+.dvc-remote/
+data/
+mlruns/
+infra/.env
+**/__pycache__/
+tests/
