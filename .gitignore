@@ -21,3 +21,5 @@ mlartifacts/
 
 # exported inference model (rebuilt with training.export_model)
 models/
+
+logs/

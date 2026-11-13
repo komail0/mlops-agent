@@ -33,6 +33,7 @@ class Config:
     llm_base_url: str = ""
     llm_api_key: str = field(default="", repr=False)
     llm_model: str = ""
+    llm_min_interval_s: float = 0.0
     max_steps: int = 12
     tool_timeout_s: float = 15.0
     run_timeout_s: float = 180.0
@@ -60,6 +61,7 @@ def load_config(environ: Mapping[str, str] | None = None) -> Config:
         llm_base_url=get("LLM_BASE_URL", defaults.llm_base_url),
         llm_api_key=get("LLM_API_KEY", defaults.llm_api_key),
         llm_model=get("LLM_MODEL", defaults.llm_model),
+        llm_min_interval_s=float(get("LLM_MIN_INTERVAL_SECONDS", str(defaults.llm_min_interval_s))),
         max_steps=int(get("MAX_STEPS", str(defaults.max_steps))),
         tool_timeout_s=float(get("TOOL_TIMEOUT_S", str(defaults.tool_timeout_s))),
         run_timeout_s=float(get("RUN_TIMEOUT_S", str(defaults.run_timeout_s))),
