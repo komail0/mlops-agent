@@ -14,6 +14,7 @@ x-airflow-common: &airflow-common
   environment: &airflow-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
     AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:?set in infra/.env}
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${POSTGRES_PASSWORD:?set in infra/.env}@postgres/airflow
     AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:?set in infra/.env}
@@ -24,6 +25,10 @@ x-airflow-common: &airflow-common
     MLFLOW_TRACKING_URI: http://mlflow:5000
     PROJECT_ROOT: /opt/project
     PYTHONPATH: /opt/project
+    # The project is bind-mounted from the host, so Git needs to trust it.
+    GIT_CONFIG_COUNT: "1"
+    GIT_CONFIG_KEY_0: safe.directory
+    GIT_CONFIG_VALUE_0: /opt/project
   volumes:
     - ../dags:/opt/airflow/dags
     - ..:/opt/project

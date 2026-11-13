@@ -19,6 +19,12 @@ def git(cwd, *args):
     )
 
 
+def git_out(cwd, *args):
+    return subprocess.run(
+        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
 def test_make_data_versions_differ_but_same_shape():
     v1, v2 = build("v1"), build("v2")
     assert v1.shape == v2.shape
@@ -80,3 +86,25 @@ def test_provenance_omits_unknowns(tmp_path):
     (tmp_path / "data.csv").write_text("a\n1\n")
     tags = dataset_provenance("data.csv", tmp_path)
     assert tags == {"dvc.dataset_path": "data.csv"}
+
+
+def test_provenance_labels_version_by_hash_even_when_uncommitted(tmp_path):
+    other = "b" * 32
+    git(tmp_path, "init", "-q")
+    (tmp_path / "data.csv").write_text("a\n1\n")
+    for version, md5 in (("v1", MD5), ("v2", other)):
+        (tmp_path / "data.csv.dvc").write_text(f"outs:\n- md5: {md5}\n  path: data.csv\n")
+        git(tmp_path, "add", "data.csv.dvc")
+        git(tmp_path, "commit", "-q", "-m", version)
+        git(tmp_path, "tag", f"data-{version}")
+    # workspace is switched back to v1's hash without committing
+    (tmp_path / "data.csv.dvc").write_text(f"outs:\n- md5: {MD5}\n  path: data.csv\n")
+    tags = dataset_provenance("data.csv", tmp_path)
+    assert tags["dataset.version"] == "v1"
+    assert tags["dvc.dataset_commit"] == git_out(tmp_path, "rev-parse", "data-v1")
+
+
+def test_provenance_reports_workspace_mismatch(tmp_path):
+    (tmp_path / "data.csv").write_text("changed\n")
+    (tmp_path / "data.csv.dvc").write_text(f"outs:\n- md5: {MD5}\n  path: data.csv\n")
+    assert dataset_provenance("data.csv", tmp_path)["dvc.workspace_matches"] == "false"

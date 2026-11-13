@@ -21,6 +21,7 @@ DATASET_TAGS = (
     "dvc.dataset_path",
     "git.commit",
     "dvc.uncommitted_change",
+    "dvc.workspace_matches",
 )
 READINESS_NOTE = (
     "The best metric value alone does not show a model is production-ready. Check the "
