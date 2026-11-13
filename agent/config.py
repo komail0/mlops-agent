@@ -38,6 +38,7 @@ class Config:
     run_timeout_s: float = 180.0
     confirm_ttl_s: float = 300.0
     k8s_allowed_namespaces: tuple[str, ...] = ("mlops-agent",)
+    k8s_context: str = ""
     allowed_dags: tuple[str, ...] = ("training_pipeline",)
     mlflow_tracking_uri: str = "http://localhost:5000"
     airflow_base_url: str = "http://localhost:8080"
@@ -66,6 +67,7 @@ def load_config(environ: Mapping[str, str] | None = None) -> Config:
         k8s_allowed_namespaces=tuple(
             _csv(get("K8S_ALLOWED_NAMESPACES", ",".join(defaults.k8s_allowed_namespaces)))
         ),
+        k8s_context=get("K8S_CONTEXT", defaults.k8s_context),
         allowed_dags=tuple(_csv(get("ALLOWED_DAGS", ",".join(defaults.allowed_dags)))),
         mlflow_tracking_uri=get("MLFLOW_TRACKING_URI", defaults.mlflow_tracking_uri),
         airflow_base_url=get("AIRFLOW_BASE_URL", defaults.airflow_base_url),

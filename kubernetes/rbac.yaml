@@ -1,0 +1,43 @@
+# Restricted identity for the agent: namespaced, no secrets, no cluster-wide access.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mlops-agent-sa
+  namespace: mlops-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: mlops-agent-role
+  namespace: mlops-agent
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "endpoints", "events", "configmaps"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["services/proxy"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list"]
+  # The only write permissions: restart (patch the pod template) and scale.
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mlops-agent-binding
+  namespace: mlops-agent
+subjects:
+  - kind: ServiceAccount
+    name: mlops-agent-sa
+    namespace: mlops-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mlops-agent-role

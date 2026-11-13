@@ -59,7 +59,10 @@ def test_manifests_meet_the_spec():
     import yaml
 
     root = pathlib.Path(__file__).resolve().parents[1] / "kubernetes"
-    docs = {p.stem: yaml.safe_load(p.read_text(encoding="utf-8")) for p in root.glob("*.yaml")}
+    docs = {
+        name: yaml.safe_load((root / f"{name}.yaml").read_text(encoding="utf-8"))
+        for name in ("deployment", "service", "configmap")
+    }
     dep = docs["deployment"]
     assert dep["kind"] == "Deployment" and dep["spec"]["replicas"] >= 2
     container = dep["spec"]["template"]["spec"]["containers"][0]
