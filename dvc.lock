@@ -6,7 +6,7 @@ stages:
     deps:
     - path: data/dataset.csv
       hash: md5
-      md5: 24d9881fad8cfb3d94f5276d372e422b
+      md5: 09d257829e61e9590326bf936207b6f9
       size: 121955
     - path: training/train.py
       hash: md5
@@ -15,5 +15,5 @@ stages:
     outs:
     - path: metrics.json
       hash: md5
-      md5: b96799c83bdfb8dd44125a360cfeeadb
-      size: 172
+      md5: 4e163838dc255794795587c9c57ca384
+      size: 173
