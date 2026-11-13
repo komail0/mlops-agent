@@ -67,10 +67,11 @@ def log_to_mlflow(
         mlflow.log_params(params)
         mlflow.log_metrics(metrics)
         mlflow.set_tags(tags)
+        mlflow.log_dict({"metrics": metrics, "params": params, "tags": tags}, "summary.json")
         if model is not None:
             import mlflow.sklearn
 
-            mlflow.sklearn.log_model(model, name="model")
+            mlflow.sklearn.log_model(model, name="model", serialization_format="cloudpickle")
         return run.info.run_id
 
 
