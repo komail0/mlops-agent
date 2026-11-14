@@ -194,7 +194,20 @@ class DvcTools:
             except json.JSONDecodeError:
                 raise ToolError("could not parse dvc status output") from None
             status.update(part)
-        return {"changed": bool(status), "status": _posix_paths(status)}
+        # Say which version the files are on, so "unchanged" is never read as "same as an
+        # older run's version".
+        versions: dict[str, Any] = {}
+        for dvc_file in self._dvc_files():
+            info = self.dataset_version(dvc_file.as_posix())
+            versions[dvc_file.as_posix()] = {"version": info["version"], "md5": info["md5"]}
+        return {
+            "changed": bool(status),
+            "status": _posix_paths(status),
+            "current_version": versions,
+            "note": "'changed' compares files with the current version only. Compare "
+            "current_version with the version recorded on a run before saying a run used "
+            "the current data.",
+        }
 
     def reproduce_instructions(self, rev: str, path: str | None = None) -> dict[str, Any]:
         dvc_file = self._resolve(path)

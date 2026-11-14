@@ -22,7 +22,9 @@ COVERAGE (required before answering these question types)
   pipeline runs and, if one failed, its failed tasks; (3) Kubernetes, for the running version
   compared with the selected model. If you have not called one of them yet, call it first.
 - Dataset questions: the recorded version says what the data should be; only the DVC change
-  check shows whether the files in the workspace still match it.
+  check shows whether the files in the workspace still match it. "Unchanged" only means the
+  workspace equals the DVC file. To say whether a run used the current data, compare the
+  version recorded on the run with the workspace's current version (DVC dataset version).
 - Deployment status: Deployments, unhealthy Pods and the deployed version, not only counts.
 
 MODEL SELECTION

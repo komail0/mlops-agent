@@ -93,7 +93,9 @@ def test_compare_versions(repo):
 
 def test_check_changes_detects_modification(repo):
     tools, _ = make_tools(repo)
-    assert tools.check_changes()["changed"] is False
+    clean = tools.check_changes()
+    assert clean["changed"] is False
+    assert clean["current_version"]["data/d.csv.dvc"]["version"] is not None
     (repo / "data" / "d.csv").write_text("a,b\n9,9\n")
     result = tools.check_changes()
     assert result["changed"] is True
