@@ -19,6 +19,7 @@ from agent.config import Config
 from agent.safety import ConfirmationManager, SafetyError, validate_dvc_args
 from agent.schemas import ToolError, ToolSpec, object_schema
 
+DVC_TIMEOUT_S = 90.0
 _SKIP_DIRS = {".git", ".dvc", ".venv", "venv", "node_modules", "__pycache__", ".dvc-remote"}
 _REV = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$")
 _PATH_PROP = {
@@ -44,7 +45,8 @@ class DvcTools:
     ):
         self.repo = Path(config.dvc_repo_path).resolve()
         self.confirmations = confirmations
-        self.timeout = timeout_s or config.tool_timeout_s
+        # DVC starts slowly (several seconds per command), so it gets a longer limit.
+        self.timeout = timeout_s or max(config.tool_timeout_s, DVC_TIMEOUT_S)
 
     # ---- subprocess helpers -------------------------------------------------
 
@@ -183,10 +185,15 @@ class DvcTools:
         return result
 
     def check_changes(self) -> dict[str, Any]:
-        try:
-            status = json.loads(self._dvc(["status", "--json"]) or "{}")
-        except json.JSONDecodeError:
-            raise ToolError("could not parse dvc status output") from None
+        # Check each tracked dataset on its own: faster than a whole-project status, and it
+        # does not mix in unrelated pipeline-stage staleness.
+        status: dict[str, Any] = {}
+        for dvc_file in self._dvc_files():
+            try:
+                part = json.loads(self._dvc(["status", dvc_file.as_posix(), "--json"]) or "{}")
+            except json.JSONDecodeError:
+                raise ToolError("could not parse dvc status output") from None
+            status.update(part)
         return {"changed": bool(status), "status": _posix_paths(status)}
 
     def reproduce_instructions(self, rev: str, path: str | None = None) -> dict[str, Any]:
@@ -234,7 +241,7 @@ class DvcTools:
 
     def specs(self) -> list[ToolSpec]:
         rev = {"type": "string", "description": "Git revision, tag (e.g. data-v1) or commit."}
-        return [
+        specs = [
             ToolSpec(
                 "dvc_list_datasets",
                 "List datasets tracked by DVC with their hash and size.",
@@ -284,3 +291,6 @@ class DvcTools:
                 mutating=True,
             ),
         ]
+        for spec in specs:
+            spec.timeout_s = self.timeout + 5  # the orchestrator waits a little longer
+        return specs

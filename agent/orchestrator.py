@@ -27,6 +27,7 @@ from agent.schemas import ToolError, ToolResult, ToolSpec
 from agent.validation import validate_args
 
 MAX_TOOL_CHARS = 7000
+EVIDENCE_CHARS = 1500
 KEEP_TURNS = 4
 CONFIRM_RE = re.compile(r"confirm\s+([0-9a-f]{8})", re.IGNORECASE)
 UNAVAILABLE_NOTE = "Information unavailable. Do not estimate or invent it; say it is unavailable."
@@ -42,6 +43,8 @@ class ToolRecord:
     ok: bool
     duration_ms: int
     error: str | None = None
+    arguments: dict[str, Any] = field(default_factory=dict)
+    output: str = ""  # redacted, truncated tool output, kept as evidence for the report
 
 
 @dataclass
@@ -114,12 +117,18 @@ class Orchestrator:
                     break
                 for call in reply.tool_calls:
                     result = self._execute(call, request_id)
+                    rendered = self._render(result)
                     records.append(
-                        ToolRecord(result.tool, result.ok, result.duration_ms, result.error)
+                        ToolRecord(
+                            result.tool,
+                            result.ok,
+                            result.duration_ms,
+                            result.error,
+                            redact_obj(call.arguments),
+                            rendered[:EVIDENCE_CHARS],
+                        )
                     )
-                    turn.append(
-                        {"role": "tool", "tool_call_id": call.id, "content": self._render(result)}
-                    )
+                    turn.append({"role": "tool", "tool_call_id": call.id, "content": rendered})
             else:
                 status = "step_limit"
             if status in ("timeout", "step_limit"):
@@ -185,9 +194,10 @@ class Orchestrator:
 
         thread = threading.Thread(target=work, daemon=True)
         thread.start()
-        thread.join(self.config.tool_timeout_s)
+        limit = spec.timeout_s or self.config.tool_timeout_s
+        thread.join(limit)
         if thread.is_alive():
-            return ToolResult.failure(name, f"timed out after {self.config.tool_timeout_s:g}s")
+            return ToolResult.failure(name, f"timed out after {limit:g}s")
         if "error" in outcome:
             return ToolResult.failure(name, redact(outcome["error"]))
         return ToolResult.success(name, redact_obj(outcome.get("data")))

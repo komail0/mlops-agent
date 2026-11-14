@@ -48,6 +48,7 @@ class ToolSpec:
     parameters: dict[str, Any]
     handler: Callable[..., Any]
     mutating: bool = False
+    timeout_s: float | None = None  # overrides the default per-tool time limit
     tags: list[str] = field(default_factory=list)
 
     def to_openai(self) -> dict[str, Any]:

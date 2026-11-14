@@ -130,6 +130,16 @@ class FakeCore:
         self._maybe_fail()
         return self.logs
 
+    def list_namespaced_config_map(self, ns, **kw):
+        return k.V1ConfigMapList(
+            items=[
+                k.V1ConfigMap(
+                    metadata=k.V1ObjectMeta(name="inference-api-config"),
+                    data={"MODEL_PATH": "/app/models/model.joblib", "API_TOKEN": "t0k3n-value"},
+                )
+            ]
+        )
+
     def list_namespaced_service(self, ns, **kw):
         return k.V1ServiceList(
             items=[
@@ -376,3 +386,26 @@ def test_specs_flag_only_write_tools_as_mutating(env):
         "k8s_restart_deployment",
         "k8s_scale_deployment",
     }
+
+
+def test_configmaps_are_readable_and_sensitive_keys_masked(env):
+    tools, *_ = env
+    out = tools.configmaps()["configmaps"][0]
+    assert out["data"]["MODEL_PATH"] == "/app/models/model.joblib"
+    assert out["data"]["API_TOKEN"] == "[REDACTED]"
+    assert len(tools.configmaps(name="inference-api-config")["configmaps"]) == 1
+    with pytest.raises(ToolError, match="not found"):
+        tools.configmaps(name="nope")
+    with pytest.raises(ToolError, match="not approved"):
+        tools.configmaps("kube-system")
+
+
+def test_pod_status_names_the_config_source(env):
+    tools, core, *_ = env
+    p = pod("cfg-1")
+    p.spec.containers[0].env_from = [
+        k.V1EnvFromSource(config_map_ref=k.V1ConfigMapEnvSource(name="inference-api-config"))
+    ]
+    core.pods = [p]
+    sources = tools.pod_status("cfg-1")["containers"][0]["config_sources"]
+    assert sources == [{"configmap": "inference-api-config"}]

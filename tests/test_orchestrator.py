@@ -430,3 +430,61 @@ def test_llm_client_retries_then_parses_tool_calls():
     client.chat.completions.create.side_effect = openai.APIConnectionError(request=request)
     with pytest.raises(LLMError):
         llm.chat([{"role": "user", "content": "x"}])
+
+
+# ---- CLI helpers: evidence and scripted conversations ----------------------------
+
+
+def test_tool_records_keep_redacted_arguments_and_output_as_evidence():
+    llm = ScriptedLLM(tools_reply(call("t", {"x": f"key {SECRET}"})), text("ok"))
+    schema = object_schema({"x": {"type": "string"}}, ["x"])
+    orch, _ = make(llm, [spec("t", lambda x: {"value": 42}, schema)])
+    record = orch.chat("go").tools[0]
+    assert SECRET not in json.dumps(record.arguments) and '"value": 42' in record.output
+
+
+def test_scripted_conversation_confirms_only_what_a_tool_requested(tmp_path, capsys):
+    from agent.main import pending_token, run_script
+
+    cm = ConfirmationManager()
+    tool, performed = restart_tool(cm)
+    llm = ScriptedLLM(
+        tools_reply(call("restart", {"deployment": "api"})),
+        text("reply with confirm"),
+        lambda msgs: tools_reply(
+            call(
+                "restart",
+                {
+                    "deployment": "api",
+                    "confirmation_token": re.search(r"token (\w{8})", msgs[-1]["content"]).group(1),
+                },
+            )
+        ),
+        text("restarted"),
+    )
+    orch = Orchestrator(Config(tool_timeout_s=2), llm, {"restart": tool}, cm)
+    script = tmp_path / "chat.txt"
+    script.write_text("# comment\nrestart api\n@confirm\n", encoding="utf-8")
+    assert run_script(orch, script, evidence=True) == 0
+    assert performed == ["api"]
+    out = capsys.readouterr().out
+    assert "you> restart api" in out and "you> confirm " in out and "--- evidence:" in out
+    # @confirm with nothing pending is an error, not a blind approval
+    bare = tmp_path / "bare.txt"
+    bare.write_text("@confirm\n", encoding="utf-8")
+    assert run_script(orch, bare, evidence=False) == 1
+    assert pending_token(_empty_result()) is None
+
+
+def _empty_result():
+    from agent.orchestrator import AgentResult
+
+    return AgentResult("x", "r", "ok")
+
+
+def test_per_tool_timeout_overrides_the_default():
+    slow = spec("slow", lambda: time.sleep(0.4) or {"done": True})
+    slow.timeout_s = 3
+    llm = ScriptedLLM(tools_reply(call("slow")), text("ok"))
+    orch, _ = make(llm, [slow], tool_timeout_s=0.1)
+    assert orch.chat("go").tools[0].ok is True

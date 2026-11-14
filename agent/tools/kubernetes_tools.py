@@ -13,7 +13,7 @@ from collections.abc import Callable
 from typing import Any
 
 from agent.config import Config
-from agent.redact import redact
+from agent.redact import redact, redact_obj
 from agent.safety import ConfirmationManager, SafetyError, check_namespace
 from agent.schemas import ToolError, ToolSpec, object_schema
 
@@ -208,6 +208,13 @@ class KubernetesTools:
                     "image": c.image,
                     "state": self._state(c.state),
                     "last_state": self._state(c.last_state),
+                    "config_sources": [
+                        {"configmap": ref.config_map_ref.name}
+                        for ref in (spec.env_from or [])
+                        if ref.config_map_ref
+                    ]
+                    if spec
+                    else [],
                     "readiness_probe": probe(spec.readiness_probe) if spec else None,
                     "liveness_probe": probe(spec.liveness_probe) if spec else None,
                 }
@@ -297,6 +304,21 @@ class KubernetesTools:
             "events": rows[:30],
             "warnings": sum(1 for r in rows if r["type"] == "Warning"),
         }
+
+    def configmaps(self, namespace: str | None = None, name: str | None = None) -> dict[str, Any]:
+        """Non-sensitive configuration. Secrets are never read."""
+        ns = self._ns(namespace)
+        if name:
+            _check_name(name, "configmap name")
+        items = self._call(self.core.list_namespaced_config_map, ns).items
+        out = [
+            {"name": c.metadata.name, "data": redact_obj(dict(c.data or {}))}
+            for c in items
+            if not name or c.metadata.name == name
+        ]
+        if name and not out:
+            raise ToolError("not found in Kubernetes")
+        return {"namespace": ns, "configmaps": out}
 
     def unhealthy_pods(self, namespace: str | None = None) -> dict[str, Any]:
         ns = self._ns(namespace)
@@ -497,6 +519,13 @@ class KubernetesTools:
                 "Recent namespace events, optionally for one object.",
                 object_schema({"namespace": ns, "object_name": {"type": "string"}}),
                 self.events,
+            ),
+            ToolSpec(
+                "k8s_get_configmaps",
+                "Read ConfigMaps (non-sensitive settings such as model path or versions) to check "
+                "how a workload is configured.",
+                object_schema({"namespace": ns, "name": {"type": "string"}}),
+                self.configmaps,
             ),
             ToolSpec(
                 "k8s_unhealthy_pods",
