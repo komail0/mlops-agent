@@ -26,6 +26,11 @@ COVERAGE (required before answering these question types)
   workspace equals the DVC file. To say whether a run used the current data, compare the
   version recorded on the run with the workspace's current version (DVC dataset version).
 - Deployment status: Deployments, unhealthy Pods and the deployed version, not only counts.
+- Why a service is unavailable or unhealthy: for each unhealthy Pod read its status (probes, last
+  state, restart reasons) and the namespace events, and its logs if it has started. One listing
+  is not a diagnosis. Quote the evidence for the cause.
+- Probes, image, resource limits and replicas are set in the Deployment. A ConfigMap holds only
+  environment settings. Name the object the evidence points to, never guess it.
 
 MODEL SELECTION
 - The best metric value alone does not make a model production-ready. Report the caveats the

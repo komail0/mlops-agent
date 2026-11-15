@@ -8,6 +8,10 @@
 #   bash scripts/failures.sh data-restore
 #   bash scripts/failures.sh mlflow-stop         F3: MLflow server is down
 #   bash scripts/failures.sh mlflow-start
+#   bash scripts/failures.sh k8s-bad-probe       readiness probe points to a path that returns 404
+#   bash scripts/failures.sh k8s-bad-image       image tag that does not exist (ImagePullBackOff)
+#   bash scripts/failures.sh k8s-oom             memory limit too small (OOMKilled)
+#   bash scripts/failures.sh k8s-heal            re-apply kubernetes/deployment.yaml
 #
 # Each failure is reversible; the *-restore / *-start commands return to the healthy state.
 set -euo pipefail
@@ -36,6 +40,26 @@ case "${1:-}" in
     kubectl -n "$NS" rollout status deployment/inference-api --timeout=120s
     wait_pods
     ;;
+  k8s-bad-probe)
+    kubectl -n "$NS" patch deployment inference-api --type json -p       '[{"op":"replace","path":"/spec/template/spec/containers/0/readinessProbe/httpGet/path","value":"/does-not-exist"}]'
+    sleep 30
+    wait_pods
+    ;;
+  k8s-bad-image)
+    kubectl -n "$NS" set image deployment/inference-api api=mlops-agent-api:9.9.9
+    sleep 30
+    wait_pods
+    ;;
+  k8s-oom)
+    kubectl -n "$NS" patch deployment inference-api --type json -p       '[{"op":"replace","path":"/spec/template/spec/containers/0/resources/requests/memory","value":"8Mi"},{"op":"replace","path":"/spec/template/spec/containers/0/resources/limits/memory","value":"24Mi"}]'
+    sleep 40
+    wait_pods
+    ;;
+  k8s-heal)
+    kubectl apply -f kubernetes/deployment.yaml
+    kubectl -n "$NS" rollout status deployment/inference-api --timeout=180s
+    wait_pods
+    ;;
   data-corrupt)
     "$PYTHON" - "$DATA" <<'PY'
 import sys
@@ -58,7 +82,7 @@ PY
     docker compose -f infra/docker-compose.yml start mlflow
     ;;
   *)
-    sed -n 2,12p "$0"
+    sed -n 2,16p "$0"
     exit 2
     ;;
 esac

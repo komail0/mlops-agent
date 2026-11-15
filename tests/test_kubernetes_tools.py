@@ -11,7 +11,7 @@ from agent.schemas import ToolError  # noqa: E402
 from agent.tools.kubernetes_tools import KubernetesTools  # noqa: E402
 from kubernetes import client as k  # noqa: E402
 
-NOW = dt.datetime(2026, 11, 14, 12, 0, tzinfo=dt.timezone.utc)
+NOW = dt.datetime(2026, 11, 14, 12, 0, tzinfo=dt.UTC)
 NS = "mlops-agent"
 SECRET = "sk-" + "q1w2e3r4" * 4
 

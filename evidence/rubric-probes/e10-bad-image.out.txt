@@ -1,0 +1,27 @@
+you> Why is my prediction API unavailable? Check the pods and tell me the root cause with evidence.
+
+**Known facts**
+*   The prediction API is experiencing issues due to a failing Pod: `inference-api-5f9745cb79-wpqf6` [k8s_list_pods].
+*   The root cause is an `ImagePullBackOff` error [k8s_pod_status].
+*   The cluster is unable to pull the image `mlops-agent-api:9.9.9` because the repository does not exist or access is denied [k8s_pod_status, k8s_events].
+*   Two other pods (`inference-api-675bcbdfc9-tc9hb` and `inference-api-675bcbdfc9-vt7f9`) are currently `Running` and using image `mlops-agent-api:1.0.0` [k8s_list_pods].
+
+**Uncertainties**
+*   It is unknown why the deployment is attempting to pull the non-existent image version `9.9.9` while the existing pods are running version `1.0.0`.
+
+**Recommended actions**
+*   Investigate the Deployment configuration to determine why it was updated to reference the invalid image tag `9.9.9`.
+*   Revert the Deployment image tag to a valid version (e.g., `1.0.0`) if the update was unintentional.
+
+Tools used: k8s_list_pods [ok], k8s_pod_status [ok], k8s_events [ok]
+
+--- evidence: k8s_list_pods args={}
+{"ok": true, "tool": "k8s_list_pods", "data": {"namespace": "mlops-agent", "pods": [{"name": "inference-api-5f9745cb79-wpqf6", "phase": "Pending", "ready": "0/1", "restarts": 0, "waiting_reasons": ["ImagePullBackOff"], "node": "mlops-agent-control-plane", "age_s": 52, "version": "1.0.0", "images": ["mlops-agent-api:9.9.9"]}, {"name": "inference-api-675bcbdfc9-tc9hb", "phase": "Running", "ready": "1/1", "restarts": 1, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 137193, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"]}, {"name": "inference-api-675bcbdfc9-vt7f9", "phase": "Running", "ready": "1/1", "restarts": 1, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 137193, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"]}]}, "error": null, "duration_ms": 1884}
+
+--- evidence: k8s_pod_status args={"pod": "inference-api-5f9745cb79-wpqf6"}
+{"ok": true, "tool": "k8s_pod_status", "data": {"name": "inference-api-5f9745cb79-wpqf6", "phase": "Pending", "ready": "0/1", "restarts": 0, "waiting_reasons": ["ImagePullBackOff"], "node": "mlops-agent-control-plane", "age_s": 55, "version": "1.0.0", "images": ["mlops-agent-api:9.9.9"], "conditions": [{"type": "PodReadyToStartContainers", "status": "True", "reason": null, "message": null}, {"type": "Initialized", "status": "True", "reason": null, "message": null}, {"type": "Ready", "status": "False", "reason": "ContainersNotReady", "message": "containers with unready status: [api]"}, {"type": "ContainersReady", "status": "False", "reason": "ContainersNotReady", "message": "containers with unready status: [api]"}, {"type": "PodScheduled", "status": "True", "reason": null, "message": null}], "containers": [{"name": "api", "ready": false, "restart_count": 0, "image": "mlops-agent-api:9.9.9", "state": {"state": "waiting", "reason": "ImagePullBackOff", "message": "Back-off pulling image \"mlops-agent-api:9.9.9\": ErrImagePull: failed to pull and unpack image \"docker.io/library/mlops-agent-api:9.9.9\": failed to resolve reference \"docker.io/library/mlops-agent-api:9.9.9\": pull access denied, repository does not exist or may require authorization: [REDACTED] messa"}, "last_state": null, "config_sources": [{"configmap": "inference-api-config"}], "readiness_probe": {"path": "/ready", "port": "http"}, "liveness_probe": {"path": "/health", "port": "http"}}]}, "error": null, "duratio
+
+--- evidence: k8s_events args={"object_name": "inference-api-5f9745cb79-wpqf6"}
+{"ok": true, "tool": "k8s_events", "data": {"namespace": "mlops-agent", "events": [{"time": "2026-11-15T12:20:48+00:00", "type": "Normal", "reason": "BackOff", "object": "inference-api-5f9745cb79-wpqf6", "message": "Back-off pulling image \"mlops-agent-api:9.9.9\"", "count": 5}, {"time": "2026-11-15T12:20:48+00:00", "type": "Warning", "reason": "Failed", "object": "inference-api-5f9745cb79-wpqf6", "message": "Error: ImagePullBackOff", "count": 5}, {"time": "2026-11-15T12:20:35+00:00", "type": "Warning", "reason": "Failed", "object": "inference-api-5f9745cb79-wpqf6", "message": "Failed to pull image \"mlops-agent-api:9.9.9\": failed to pull and unpack image \"docker.io/library/mlops-agent-api:9.9.9\": failed to resolve reference \"docker.io/library/mlops-agent-api:9.9.9\": pull access denied, repository does not exist or may require authorization: [REDACTED] message: insufficient", "count": 4}, {"time": "2026-11-15T12:20:35+00:00", "type": "Warning", "reason": "Failed", "object": "inference-api-5f9745cb79-wpqf6", "message": "Error: ErrImagePull", "count": 4}, {"time": "2026-11-15T12:20:28+00:00", "type": "Normal", "reason": "Pulling", "object": "inference-api-5f9745cb79-wpqf6", "message": "Pulling image \"mlops-agent-api:9.9.9\"", "count": 4}, {"time": "2026-11-15T12:19:02.215128+00:00", "type": "Normal", "reason": "Scheduled", "object": "inference-api-5f9745cb79-wpqf6", "message": "Successfully assigned mlops-agent/inference-api-5f9745cb79-wpqf6 to mlops-agent-control-plane",
+(request 055f4bcd77af, ok)
+

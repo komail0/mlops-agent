@@ -8,7 +8,7 @@ user confirmation. See [architecture.md](architecture.md) for the design.
 
 ## Requirements
 
-- Python 3.11+ (3.14 works, see the DVC note below), Git
+- Python 3.11 or newer (3.11 in CI, 3.14 also tested), Git
 - Docker Desktop (about 8 GB RAM for the stack), `kubectl`, [kind](https://kind.sigs.k8s.io/)
 - An OpenAI-compatible LLM endpoint with tool calling (the project was developed against
   Gemini's OpenAI-compatible API)
@@ -17,8 +17,10 @@ user confirmation. See [architecture.md](architecture.md) for the design.
 
 ```
 python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -e ".[dev,train,data,api]"
+pip install -e ".[dev,train,data,api]" -c constraints.txt
 ```
+
+`constraints.txt` pins the direct dependencies to the versions the project was tested with.
 
 On Python 3.14 the `dvc` build can fail inside pip's isolated environment. If it does:
 `pip install --no-build-isolation "dvc>=3"`.
@@ -109,14 +111,19 @@ Example questions:
 ## Failure injection
 
 `scripts/failures.sh` breaks and repairs the system on purpose, to test the agent's diagnosis:
-`k8s-bad-config` / `k8s-restore`, `data-corrupt` / `data-restore`, `mlflow-stop` /
-`mlflow-start`.
+`k8s-bad-config` / `k8s-restore` (wrong model path in the ConfigMap), `k8s-bad-probe`
+(readiness probe on a missing path), `k8s-bad-image` (image tag that does not exist),
+`k8s-oom` (memory limit too small), then `k8s-heal` to re-apply the deployment;
+`data-corrupt` / `data-restore`; `mlflow-stop` / `mlflow-start`. Ask the agent, for example,
+"Why is my prediction API unavailable?" after any of the Kubernetes faults.
 
 ## Report and evidence
 
 - [23I-0717-A-REPORT.pdf](23I-0717-A-REPORT.pdf): the technical report (architecture, tools and
   permissions, evidence from all four systems, five tested conversations, two failure
   investigations, limitations).
+- [docs/tool-reference.md](docs/tool-reference.md): every tool with its inputs, output fields and
+  permission level (generated from the registry by `scripts/tool_reference.py`).
 - [screenshots/](screenshots/): MLflow and Airflow UI screenshots, DVC and Kubernetes captures.
 - [evidence/](evidence/): recorded conversations with every tool call and its output
   (`python -m agent.main --script FILE --evidence`), and the out-of-policy calls the code rejects
