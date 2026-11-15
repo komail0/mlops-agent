@@ -1,0 +1,31 @@
+you> Why is my prediction API unavailable? Check the pods and tell me the root cause with evidence.
+
+**Known facts**
+*   The prediction API is experiencing instability. One pod (`inference-api-76fbf56674-6hmz9`) is currently failing to reach a "Ready" state [k8s_list_pods].
+*   The root cause for the failing pod is `OOMKilled` (exit code 137), indicating the container is exceeding its memory limits [k8s_unhealthy_pods, k8s_pod_status].
+*   Two other pods (`inference-api-675bcbdfc9-tc9hb` and `inference-api-675bcbdfc9-vt7f9`) are currently "Running" but have each restarted once with an unknown exit code 255 [k8s_unhealthy_pods].
+
+**Uncertainties**
+*   The specific memory usage pattern leading to the `OOMKilled` event is not visible in the logs [k8s_pod_logs].
+*   It is unclear if the exit code 255 on the other pods is related to the same memory pressure or a different issue.
+
+**Recommended actions**
+*   Investigate the memory configuration of the `inference-api` deployment to see if the resource limits are set too low for the current workload.
+*   Check the application metrics (if available in MLflow or external monitoring) to see if there has been a recent spike in traffic or memory consumption.
+*   Consider scaling the deployment or increasing memory limits if the current configuration is insufficient for the model's requirements.
+
+Tools used: k8s_list_pods [ok], k8s_unhealthy_pods [ok], k8s_pod_logs [ok], k8s_pod_status [ok]
+
+--- evidence: k8s_list_pods args={}
+{"ok": true, "tool": "k8s_list_pods", "data": {"namespace": "mlops-agent", "pods": [{"name": "inference-api-675bcbdfc9-tc9hb", "phase": "Running", "ready": "1/1", "restarts": 1, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 137105, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"]}, {"name": "inference-api-675bcbdfc9-vt7f9", "phase": "Running", "ready": "1/1", "restarts": 1, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 137105, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"]}, {"name": "inference-api-76fbf56674-6hmz9", "phase": "Running", "ready": "0/1", "restarts": 3, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 51, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"]}]}, "error": null, "duration_ms": 2246}
+
+--- evidence: k8s_unhealthy_pods args={}
+{"ok": true, "tool": "k8s_unhealthy_pods", "data": {"namespace": "mlops-agent", "checked": 3, "unhealthy": [{"name": "inference-api-675bcbdfc9-tc9hb", "phase": "Running", "ready": "1/1", "restarts": 1, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 137106, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"], "problems": ["1 restart(s), last exit 255 (Unknown)"]}, {"name": "inference-api-675bcbdfc9-vt7f9", "phase": "Running", "ready": "1/1", "restarts": 1, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 137106, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"], "problems": ["1 restart(s), last exit 255 (Unknown)"]}, {"name": "inference-api-76fbf56674-6hmz9", "phase": "Running", "ready": "0/1", "restarts": 3, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 52, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"], "problems": ["container api not ready", "3 restart(s), last exit 137 (OOMKilled)"]}], "all_healthy": false}, "error": null, "duration_ms": 7}
+
+--- evidence: k8s_pod_logs args={"previous": true, "pod": "inference-api-76fbf56674-6hmz9"}
+{"ok": true, "tool": "k8s_pod_logs", "data": {"pod": "inference-api-76fbf56674-6hmz9", "previous": true, "tail_lines": 50, "logs": "unable to retrieve container logs for containerd://049c827c9b1de519da3514e6d61343f3bbe0e94cb80bacf6a0a86aa03e524bce", "truncated": false}, "error": null, "duration_ms": 21}
+
+--- evidence: k8s_pod_status args={"pod": "inference-api-76fbf56674-6hmz9"}
+{"ok": true, "tool": "k8s_pod_status", "data": {"name": "inference-api-76fbf56674-6hmz9", "phase": "Running", "ready": "0/1", "restarts": 3, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 55, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"], "conditions": [{"type": "PodReadyToStartContainers", "status": "True", "reason": null, "message": null}, {"type": "Initialized", "status": "True", "reason": null, "message": null}, {"type": "Ready", "status": "False", "reason": "ContainersNotReady", "message": "containers with unready status: [api]"}, {"type": "ContainersReady", "status": "False", "reason": "ContainersNotReady", "message": "containers with unready status: [api]"}, {"type": "PodScheduled", "status": "True", "reason": null, "message": null}], "containers": [{"name": "api", "ready": false, "restart_count": 3, "image": "docker.io/library/mlops-agent-api:1.0.0", "state": {"state": "terminated", "reason": "OOMKilled", "exit_code": 137, "message": "", "finished_at": "2026-11-15T12:18:25+00:00"}, "last_state": {"state": "terminated", "reason": "OOMKilled", "exit_code": 137, "message": "", "finished_at": "2026-11-15T12:17:54+00:00"}, "config_sources": [{"configmap": "inference-api-config"}], "readiness_probe": {"path": "/ready", "port": "http"}, "liveness_probe": {"path": "/health", "port": "http"}}]}, "error": null, "duration_ms": 9}
+(request cb02bb9717ce, ok)
+

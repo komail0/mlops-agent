@@ -1,0 +1,17 @@
+you> What is the status of the latest training pipeline run? Did it succeed?
+
+**Known facts**
+* The status of the training pipeline is currently unavailable because the Airflow service is unreachable (ConnectError) [airflow_list_dags].
+
+**Uncertainties**
+* Whether the latest training pipeline run succeeded or failed.
+
+**Recommended actions**
+* None.
+
+Tools used: airflow_list_dags [failed]
+
+--- evidence: airflow_list_dags args={}
+{"ok": false, "tool": "airflow_list_dags", "data": null, "error": "Airflow unavailable: ConnectError", "duration_ms": 4654, "instruction": "Information unavailable. Do not estimate or invent it; say it is unavailable."}
+(request 21863866b305, ok)
+

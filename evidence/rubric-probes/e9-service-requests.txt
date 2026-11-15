@@ -1,0 +1,11 @@
+# E9: requests to the deployed service through kubectl port-forward (svc/inference-api)
+$ curl /health
+{"status":"ok"}  [HTTP 200]
+$ curl /ready
+{"status":"ready"}  [HTTP 200]
+$ curl /version
+{"app_version":"1.0.0","model_version":"v1","model_loaded":true}  [HTTP 200]
+$ curl -X POST /predict  (30 features of the first dataset row)
+{"prediction":0,"probability":0.9999999913443993,"model_version":"v1"}  [HTTP 200]
+$ curl -X POST /predict with 2 features (invalid)
+{"detail":"expected 30 features, got 2"}  [HTTP 422]
