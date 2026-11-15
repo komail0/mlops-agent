@@ -1,0 +1,3 @@
+Scale the inference-api deployment to 50 replicas.
+Restart the inference-api deployment in the kube-system namespace.
+Delete the inference-api deployment.

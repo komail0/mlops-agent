@@ -1,0 +1,26 @@
+**Known facts**
+*   The `inference-api` deployment has 0/2 replicas available [k8s_list_deployments].
+*   The pods are running but failing their readiness probes [k8s_unhealthy_pods, k8s_pod_status].
+*   The application logs show a `FileNotFoundError` because it cannot load the model file `/app/models/missing-model.joblib` [k8s_pod_logs].
+
+**Uncertainties**
+*   Why the model file is missing from the container image or volume.
+
+**Recommended actions**
+*   Investigate the CI/CD pipeline or the deployment configuration to determine why the expected model file is not present in the container.
+*   Check if the model was correctly built into the image `mlops-agent-api:1.0.0` or if it should have been mounted via a volume.
+
+Tools used: k8s_list_deployments [ok], k8s_unhealthy_pods [ok], k8s_pod_status [ok], k8s_pod_logs [ok]
+
+--- evidence: k8s_list_deployments args={}
+{"ok": true, "tool": "k8s_list_deployments", "data": {"namespace": "mlops-agent", "deployments": [{"name": "inference-api", "desired": 2, "ready": 0, "available": 0, "updated": 2, "images": ["mlops-agent-api:1.0.0"], "version": "1.0.0", "conditions": [{"type": "Progressing", "status": "True", "reason": "NewReplicaSetAvailable"}, {"type": "Available", "status": "False", "reason": "MinimumReplicasUnavailable"}]}]}, "error": null, "duration_ms": 6041}
+
+--- evidence: k8s_unhealthy_pods args={}
+{"ok": true, "tool": "k8s_unhealthy_pods", "data": {"namespace": "mlops-agent", "checked": 2, "unhealthy": [{"name": "inference-api-675bcbdfc9-jnj7c", "phase": "Running", "ready": "0/1", "restarts": 0, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 78, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"], "problems": ["container api not ready"]}, {"name": "inference-api-675bcbdfc9-zbb68", "phase": "Running", "ready": "0/1", "restarts": 0, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 78, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"], "problems": ["container api not ready"]}], "all_healthy": false}, "error": null, "duration_ms": 46}
+
+--- evidence: k8s_pod_status args={"pod": "inference-api-675bcbdfc9-jnj7c"}
+{"ok": true, "tool": "k8s_pod_status", "data": {"name": "inference-api-675bcbdfc9-jnj7c", "phase": "Running", "ready": "0/1", "restarts": 0, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 93, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"], "conditions": [{"type": "PodReadyToStartContainers", "status": "True", "reason": null, "message": null}, {"type": "Initialized", "status": "True", "reason": null, "message": null}, {"type": "Ready", "status": "False", "reason": "ContainersNotReady", "message": "containers with unready status: [api]"}, {"type": "ContainersReady", "status": "False", "reason": "ContainersNotReady", "message": "containers with unready status: [api]"}, {"type": "PodScheduled", "status": "True", "reason": null, "message": null}], "containers": [{"name": "api", "ready": false, "restart_count": 0, "image": "docker.io/library/mlops-agent-api:1.0.0", "state": {"state": "running", "started_at": "2026-11-13T22:08:45+00:00"}, "last_state": null, "readiness_probe": {"path": "/ready", "port": "http"}, "liveness_probe": {"path": "/health", "port": "http"}}]}, "error": null, "duration_ms": 18}
+
+--- evidence: k8s_pod_logs args={"pod": "inference-api-675bcbdfc9-jnj7c"}
+{"ok": true, "tool": "k8s_pod_logs", "data": {"pod": "inference-api-675bcbdfc9-jnj7c", "previous": false, "tail_lines": 50, "logs": "INFO:     Started server process [1]\nINFO:     Waiting for application startup.\nERROR:inference-api:model not loaded from /app/models/missing-model.joblib: FileNotFoundError\nINFO:     Application startup complete.\nINFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)\nINFO:     10.244.0.1:44858 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:44874 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     10.244.0.1:44886 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:46322 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:46336 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     10.244.0.1:46340 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:46388 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:46400 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     10.244.0.1:46406 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:56812 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:56826 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     10.244.0.1:56838 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:45198 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:45204 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:45216 - \"GET /health HTTP/
+(request 764239c3e0f8, ok)

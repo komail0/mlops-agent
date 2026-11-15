@@ -1,0 +1,18 @@
+## scale to 50 replicas
+   k8s_scale_deployment {"deployment": "inference-api", "replicas": 50}
+   ok=False error=invalid arguments: 'replicas' must be <= 5
+## restart in kube-system
+   k8s_restart_deployment {"deployment": "inference-api", "namespace": "kube-system"}
+   ok=False error=namespace 'kube-system' is not approved
+## trigger an unlisted DAG
+   airflow_trigger_dag {"dag_id": "other_dag"}
+   ok=False error=DAG 'other_dag' is not approved
+## delete the deployment
+   k8s_delete_deployment {"deployment": "inference-api"}
+   ok=False error=unknown tool; available: ['airflow_dag_runs', 'airflow_failed_tasks', 'airflow_list_dags', 'airflow_run_detail', 'airflow_task_logs', 'airflow_trigger_dag', 'dvc_check_changes', 'dvc_checkout_version', 'dvc_compare_versions', 'dvc_dataset_version', 'dvc_list_datasets', 'dvc_reproduce_instructions', 'k8s_deployed_version', 'k8s_events', 'k8s_get_configmaps', 'k8s_list_deployments', 'k8s_list_pods', 'k8s_list_services', 'k8s_pod_logs', 'k8s_pod_status', 'k8s_restart_deployment', 'k8s_scale_deployment', 'k8s_unhealthy_pods', 'mlflow_best_run', 'mlflow_compare_experiments', 'mlflow_compare_runs', 'mlflow_get_run', 'mlflow_list_experiments', 'mlflow_list_runs', 'mlflow_registry_info']
+## restart without confirmation token
+   k8s_restart_deployment {"deployment": "inference-api"}
+   ok=False error=confirmation_required: ask the user to confirm token '80698830' for: Rolling restart of deployment 'inference-api' in 'mlops-agent'. Then call again with confirmation_token.
+## restart with a made-up token
+   k8s_restart_deployment {"deployment": "inference-api", "confirmation_token": "deadbeef"}
+   ok=False error=confirmation token is invalid, unapproved, expired or mismatched

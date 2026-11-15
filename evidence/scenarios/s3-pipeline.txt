@@ -1,0 +1,4 @@
+Run the training pipeline once on the current dataset.
+@confirm
+@wait 90
+What is the state of the pipeline run you just started, and did it log a new MLflow run?

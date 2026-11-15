@@ -1,0 +1,3 @@
+Reproduce dataset version data-v1 in the workspace.
+@confirm
+Which dataset version is in the workspace now? Does the data match the hash recorded for data-v1?

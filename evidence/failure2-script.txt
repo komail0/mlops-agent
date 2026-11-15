@@ -1,0 +1,7 @@
+# Conversation replayed with: python -m agent.main --script evidence/failure2-script.txt --evidence
+# @confirm is the user typing "confirm <token>" for the token the agent displayed.
+# @wait N pauses N seconds so the pipeline run can finish.
+Trigger the model training pipeline and report whether execution succeeded.
+@confirm
+@wait 45
+Check the pipeline run again. Did it succeed? If not, which task failed and why, and has the dataset changed?

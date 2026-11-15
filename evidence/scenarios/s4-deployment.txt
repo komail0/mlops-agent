@@ -1,0 +1,1 @@
+Is the inference deployment healthy? Check the pods and tell me which model version is serving.

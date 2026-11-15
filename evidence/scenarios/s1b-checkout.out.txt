@@ -1,0 +1,50 @@
+you> Reproduce dataset version data-v1 in the workspace.
+
+To reproduce dataset version `data-v1` in the workspace, please reply exactly:
+
+`confirm 07c9ad38`
+
+Tools used: dvc_checkout_version [failed]
+
+--- evidence: dvc_checkout_version args={"rev": "data-v1"}
+{"ok": false, "tool": "dvc_checkout_version", "data": null, "error": "confirmation_required: ask the user to confirm token '07c9ad38' for: Check out data/dataset.csv.dvc and its data at 'data-v1' (md5 24d9881fad8cfb3d94f5276d372e422b). Then call again with confirmation_token.", "duration_ms": 1276, "instruction": "Nothing was changed. Tell the user to reply exactly `confirm <token>` using the token in the error, then stop. Do not call this tool again until they confirm."}
+(request 04562f8ca2f2, ok)
+
+you> confirm 07c9ad38
+
+**Known facts**
+* Dataset version `data-v1` (md5: 24d9881fad8cfb3d94f5276d372e422b) has been successfully checked out into the workspace [dvc_checkout_version].
+
+**Uncertainties**
+* none
+
+**Recommended actions**
+* none
+
+Tools used: dvc_checkout_version [ok]
+
+--- evidence: dvc_checkout_version args={"confirmation_token": "[REDACTED]", "rev": "data-v1"}
+{"ok": true, "tool": "dvc_checkout_version", "data": {"checked_out": "data-v1", "dvc_file": "data/dataset.csv.dvc", "md5": "24d9881fad8cfb3d94f5276d372e422b"}, "error": null, "duration_ms": 4117}
+(request 9c7e67027464, ok)
+
+you> Which dataset version is in the workspace now? Does the data match the hash recorded for data-v1?
+
+**Known facts**
+* The dataset version currently in the workspace is `data-v1` (md5: `24d9881fad8cfb3d94f5276d372e422b`) [dvc_dataset_version].
+* The data in the workspace matches the hash recorded for `data-v1` [dvc_check_changes].
+
+**Uncertainties**
+* none
+
+**Recommended actions**
+* none
+
+Tools used: dvc_dataset_version [ok], dvc_check_changes [ok]
+
+--- evidence: dvc_dataset_version args={}
+{"ok": true, "tool": "dvc_dataset_version", "data": {"dvc_file": "data/dataset.csv.dvc", "md5": "24d9881fad8cfb3d94f5276d372e422b", "size": 121955, "version": "v1", "version_tags": ["data-v1"], "git_commit": "69a67fc4963733e7d4f15b8f22f1cd60762e9173", "committed_at": null, "commit_message": null, "head_commit": "836e21bd0eab3007ed4e26ffde0c1610919d72d7", "uncommitted_change": true, "note": "data/dataset.csv.dvc was checked out from data-v1 and is not committed; the version and commit are those of that tag."}, "error": null, "duration_ms": 981}
+
+--- evidence: dvc_check_changes args={}
+{"ok": true, "tool": "dvc_check_changes", "data": {"changed": false, "status": {}, "current_version": {"data/dataset.csv.dvc": {"version": "v1", "md5": "24d9881fad8cfb3d94f5276d372e422b"}}, "note": "'changed' compares files with the current version only. Compare current_version with the version recorded on a run before saying a run used the current data."}, "error": null, "duration_ms": 5236}
+(request 38db8eb10fcd, ok)
+

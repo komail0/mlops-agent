@@ -1,0 +1,29 @@
+**Known facts**
+*   The `inference-api` deployment is unavailable; all 2 replicas are failing readiness probes [k8s_list_deployments, k8s_unhealthy_pods].
+*   The application logs show the `/ready` endpoint returning `503 Service Unavailable` repeatedly, while the `/health` endpoint returns `200 OK` [k8s_pod_logs].
+*   The `inference-api-config` ConfigMap specifies `MODEL_PATH` as `/app/models/missing-model.joblib` [k8s_get_configmaps].
+
+**Uncertainties**
+*   It is highly likely that the API is failing to start because it cannot locate the model file specified in the configuration.
+
+**Recommended actions**
+*   Verify if the model file `/app/models/missing-model.joblib` exists in the container image or if the configuration path is incorrect.
+*   Update the `inference-api-config` ConfigMap with the correct `MODEL_PATH` if necessary.
+
+Tools used: k8s_list_deployments [ok], k8s_unhealthy_pods [ok], k8s_pod_status [ok], k8s_pod_logs [ok], k8s_get_configmaps [ok]
+
+--- evidence: k8s_list_deployments args={}
+{"ok": true, "tool": "k8s_list_deployments", "data": {"namespace": "mlops-agent", "deployments": [{"name": "inference-api", "desired": 2, "ready": 0, "available": 0, "updated": 2, "images": ["mlops-agent-api:1.0.0"], "version": "1.0.0", "conditions": [{"type": "Progressing", "status": "True", "reason": "NewReplicaSetAvailable"}, {"type": "Available", "status": "False", "reason": "MinimumReplicasUnavailable"}]}]}, "error": null, "duration_ms": 3922}
+
+--- evidence: k8s_unhealthy_pods args={}
+{"ok": true, "tool": "k8s_unhealthy_pods", "data": {"namespace": "mlops-agent", "checked": 2, "unhealthy": [{"name": "inference-api-675bcbdfc9-jnj7c", "phase": "Running", "ready": "0/1", "restarts": 0, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 264, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"], "problems": ["container api not ready"]}, {"name": "inference-api-675bcbdfc9-zbb68", "phase": "Running", "ready": "0/1", "restarts": 0, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 264, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"], "problems": ["container api not ready"]}], "all_healthy": false}, "error": null, "duration_ms": 49}
+
+--- evidence: k8s_pod_status args={"pod": "inference-api-675bcbdfc9-jnj7c"}
+{"ok": true, "tool": "k8s_pod_status", "data": {"name": "inference-api-675bcbdfc9-jnj7c", "phase": "Running", "ready": "0/1", "restarts": 0, "waiting_reasons": [], "node": "mlops-agent-control-plane", "age_s": 265, "version": "1.0.0", "images": ["mlops-agent-api:1.0.0"], "conditions": [{"type": "PodReadyToStartContainers", "status": "True", "reason": null, "message": null}, {"type": "Initialized", "status": "True", "reason": null, "message": null}, {"type": "Ready", "status": "False", "reason": "ContainersNotReady", "message": "containers with unready status: [api]"}, {"type": "ContainersReady", "status": "False", "reason": "ContainersNotReady", "message": "containers with unready status: [api]"}, {"type": "PodScheduled", "status": "True", "reason": null, "message": null}], "containers": [{"name": "api", "ready": false, "restart_count": 0, "image": "docker.io/library/mlops-agent-api:1.0.0", "state": {"state": "running", "started_at": "2026-11-13T22:08:45+00:00"}, "last_state": null, "config_sources": [{"configmap": "inference-api-config"}], "readiness_probe": {"path": "/ready", "port": "http"}, "liveness_probe": {"path": "/health", "port": "http"}}]}, "error": null, "duration_ms": 48}
+
+--- evidence: k8s_pod_logs args={"pod": "inference-api-675bcbdfc9-jnj7c"}
+{"ok": true, "tool": "k8s_pod_logs", "data": {"pod": "inference-api-675bcbdfc9-jnj7c", "previous": false, "tail_lines": 50, "logs": "INFO:     10.244.0.1:43572 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:43576 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:43580 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     10.244.0.1:57902 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:57906 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:57910 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     10.244.0.1:35268 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:35284 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:35300 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     10.244.0.1:47362 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:47374 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:47382 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     10.244.0.1:38850 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:38852 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:38864 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     10.244.0.1:36564 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:36572 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:36588 - \"GET /ready HTTP/1.1\" 503 Service Unavailable\nINFO:     10.244.0.1:36592 - \"GET /health 
+
+--- evidence: k8s_get_configmaps args={"name": "inference-api-config"}
+{"ok": true, "tool": "k8s_get_configmaps", "data": {"namespace": "mlops-agent", "configmaps": [{"name": "inference-api-config", "data": {"APP_VERSION": "1.0.0", "LOG_LEVEL": "INFO", "MODEL_PATH": "/app/models/missing-model.joblib", "MODEL_VERSION": "v1"}}]}, "error": null, "duration_ms": 37}
+(request 65b9fb45a628, ok)

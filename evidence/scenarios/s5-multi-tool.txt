@@ -1,0 +1,1 @@
+Take the best model in MLflow, find which dataset version it used, check what the Kubernetes deployment is running, check the latest Airflow pipeline status, correlate them, and tell me whether retraining is necessary.

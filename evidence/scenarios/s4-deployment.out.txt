@@ -1,0 +1,31 @@
+you> Is the inference deployment healthy? Check the pods and tell me which model version is serving.
+
+**Known facts**
+*   The inference deployment (`inference-api`) is healthy: all 2 desired replicas are ready and available [k8s_list_deployments, k8s_unhealthy_pods].
+*   The service is currently serving model version `v1` [k8s_deployed_version].
+*   The application version is `1.0.0` [k8s_deployed_version].
+
+**Uncertainties**
+*   None.
+
+**Recommended actions**
+*   None.
+
+Tools used: k8s_list_deployments [ok], k8s_unhealthy_pods [ok], k8s_deployed_version [failed], k8s_list_services [ok], k8s_deployed_version [ok]
+
+--- evidence: k8s_list_deployments args={}
+{"ok": true, "tool": "k8s_list_deployments", "data": {"namespace": "mlops-agent", "deployments": [{"name": "inference-api", "desired": 2, "ready": 2, "available": 2, "updated": 2, "images": ["mlops-agent-api:1.0.0"], "version": "1.0.0", "conditions": [{"type": "Progressing", "status": "True", "reason": "NewReplicaSetAvailable"}, {"type": "Available", "status": "True", "reason": "MinimumReplicasAvailable"}]}]}, "error": null, "duration_ms": 1553}
+
+--- evidence: k8s_unhealthy_pods args={}
+{"ok": true, "tool": "k8s_unhealthy_pods", "data": {"namespace": "mlops-agent", "checked": 2, "unhealthy": [], "all_healthy": true}, "error": null, "duration_ms": 29}
+
+--- evidence: k8s_deployed_version args={"deployment": "inference-service"}
+{"ok": false, "tool": "k8s_deployed_version", "data": null, "error": "no matching deployment found", "duration_ms": 4, "instruction": "Information unavailable. Do not estimate or invent it; say it is unavailable."}
+
+--- evidence: k8s_list_services args={}
+{"ok": true, "tool": "k8s_list_services", "data": {"namespace": "mlops-agent", "services": [{"name": "inference-api", "type": "ClusterIP", "cluster_ip": "10.96.190.70", "ports": [{"port": 80, "target_port": "http", "protocol": "TCP"}], "selector": {"app.kubernetes.io/name": "inference-api"}, "ready_endpoints": 2, "not_ready_endpoints": 0}]}, "error": null, "duration_ms": 19}
+
+--- evidence: k8s_deployed_version args={"deployment": "inference-api"}
+{"ok": true, "tool": "k8s_deployed_version", "data": {"namespace": "mlops-agent", "deployments": [{"deployment": "inference-api", "images": ["mlops-agent-api:1.0.0"], "image_tags": ["1.0.0"], "version_label": "1.0.0", "source": "deployment spec and labels", "live_endpoint_version": "{'app_version': '1.0.0', 'model_version': 'v1', 'model_loaded': True}"}]}, "error": null, "duration_ms": 38}
+(request 841ee7ff0614, ok)
+
