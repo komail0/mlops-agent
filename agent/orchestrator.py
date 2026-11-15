@@ -18,9 +18,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from agent.config import Config
+from agent.coverage import missing_coverage
 from agent.llm import LLMError, ToolCall
 from agent.logging_setup import LOGGER_NAME, log_tool_call, new_request_id
-from agent.prompts import CONFIRMED_MESSAGE, SYSTEM_PROMPT
+from agent.prompts import CONFIRMED_MESSAGE, COVERAGE_NUDGE, SYSTEM_PROMPT
 from agent.redact import redact, redact_obj
 from agent.safety import ConfirmationManager, SafetyError
 from agent.schemas import ToolError, ToolResult, ToolSpec
@@ -29,6 +30,7 @@ from agent.validation import validate_args
 MAX_TOOL_CHARS = 7000
 EVIDENCE_CHARS = 1500
 KEEP_TURNS = 4
+MAX_COVERAGE_NUDGES = 2
 CONFIRM_RE = re.compile(r"confirm\s+([0-9a-f]{8})", re.IGNORECASE)
 UNAVAILABLE_NOTE = "Information unavailable. Do not estimate or invent it; say it is unavailable."
 CONFIRM_NOTE = (
@@ -98,7 +100,7 @@ class Orchestrator:
         started = self._clock()
         turn: list[dict[str, Any]] = [{"role": "user", "content": user_text}]
         records: list[ToolRecord] = []
-        status, answer, steps = "ok", "", 0
+        status, answer, steps, nudges = "ok", "", 0, 0
 
         def messages() -> list[dict[str, Any]]:
             history = [m for t in self._turns[-KEEP_TURNS:] for m in t]
@@ -113,6 +115,22 @@ class Orchestrator:
                 reply = self.llm.chat(messages(), self._tool_schemas)
                 turn.append(reply.as_message())
                 if not reply.tool_calls:
+                    missing = missing_coverage(user_text, records)
+                    if missing and nudges < MAX_COVERAGE_NUDGES:
+                        # The draft answer is dropped: it was written without required evidence.
+                        nudges += 1
+                        turn.pop()
+                        turn.append(
+                            {
+                                "role": "user",
+                                "content": COVERAGE_NUDGE.format(missing="; ".join(missing)),
+                            }
+                        )
+                        self._log.info(
+                            "coverage_nudge",
+                            extra={"request_id": request_id, "detail": {"missing": missing}},
+                        )
+                        continue
                     answer = reply.content.strip()
                     break
                 for call in reply.tool_calls:

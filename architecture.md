@@ -29,6 +29,15 @@ back, repeat until it answers. Limits keep a turn bounded: at most `MAX_STEPS` m
 call is checked, timed (default `TOOL_TIMEOUT_S`, per-tool override), logged and recorded with
 its arguments and output as evidence.
 
+### Coverage guard ([agent/coverage.py](agent/coverage.py))
+
+For a retraining question the brief requires evidence from all four systems. Before an answer is
+accepted the orchestrator checks which tools were called: MLflow, DVC, Airflow and Kubernetes, plus
+`airflow_failed_tasks` when the latest pipeline run failed. If something is missing, the draft
+answer is discarded and the model is told what to call (at most two times per question). A call that
+failed still counts, so an unreachable system cannot trap the loop. The model still chooses the
+tools and their order, and other questions are never checked.
+
 ## Tool contract
 
 Every tool is a `ToolSpec` (name, description, JSON-schema parameters, handler, `mutating`,

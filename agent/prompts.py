@@ -41,6 +41,10 @@ RETRAINING
   freshness-policy breach reported by a tool, a failed quality gate in a pipeline run, or
   degradation results the user supplied. Without such evidence, say that retraining is not
   shown to be necessary and what evidence would change that.
+- A different dataset version in the workspace is not evidence that the deployed model is
+  outdated. If the latest pipeline run failed the quality gate on the current data, training
+  again on that data will fail the same way: recommend investigating the data first, and do not
+  call retraining necessary.
 
 CHANGING STATE
 - Restart, scale, trigger and checkout tools change things. Call them only when the user
@@ -60,4 +64,10 @@ If a section is empty write "none". Be concise. Never print secrets or credentia
 CONFIRMED_MESSAGE = (
     "The user approved confirmation token {token}. Repeat the pending action with the same "
     "arguments and confirmation_token={token}."
+)
+
+COVERAGE_NUDGE = (
+    "Before answering, check what is still missing for this question: {missing}. "
+    "Call the matching tools now. If a system is unreachable, one failed call is enough: then "
+    "say that it is unavailable. Do not answer yet."
 )
