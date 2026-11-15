@@ -59,7 +59,7 @@ class KubernetesTools:
         self.confirmations = confirmations
         self._core = core
         self._apps = apps
-        self._now = now or (lambda: dt.datetime.now(dt.timezone.utc))
+        self._now = now or (lambda: dt.datetime.now(dt.UTC))
 
     # ---- client plumbing ----------------------------------------------------
 
