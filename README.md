@@ -109,6 +109,16 @@ Example questions:
 `k8s-bad-config` / `k8s-restore`, `data-corrupt` / `data-restore`, `mlflow-stop` /
 `mlflow-start`.
 
+## Report and evidence
+
+- [23I-0717-A-REPORT.pdf](23I-0717-A-REPORT.pdf): the technical report (architecture, tools and
+  permissions, evidence from all four systems, five tested conversations, two failure
+  investigations, limitations).
+- [screenshots/](screenshots/): MLflow and Airflow UI screenshots, DVC and Kubernetes captures.
+- [evidence/](evidence/): recorded conversations with every tool call and its output
+  (`python -m agent.main --script FILE --evidence`), and the out-of-policy calls the code rejects
+  (`evidence/scenarios/s6b_direct_calls.py`).
+
 ## Development
 
 ```
