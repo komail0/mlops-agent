@@ -46,14 +46,16 @@ Optional settings (defaults in [agent/config.py](agent/config.py)): `MLFLOW_TRAC
 ## Start the system
 
 **1. Dataset versions (DVC).** The two dataset versions are tagged `data-v1` and `data-v2`. The
-DVC remote is a local folder that is not in Git, so recreate the data on a new machine:
+DVC remote is a local folder that is not in Git, so rebuild the data on a new machine. The
+generator is deterministic and the script checks each result against the hash recorded at the tag:
 
 ```
-python -m training.make_data --version v2     # writes data/dataset.csv (current version)
+bash scripts/setup_data.sh        # PYTHON=.venv/bin/python if the venv is not active
 ```
 
-`python -m training.seed_mlflow` (step 2) reads both versions from Git history and the DVC
-files, so keep the `data-v1` and `data-v2` tags.
+It leaves the workspace on the current version (`data-v2`) with both versions in the DVC cache, so
+the agent can check out v1 later. `python -m training.seed_mlflow` (step 2) regenerates both
+versions itself, and records the dataset tag and hash for each run.
 
 **2. MLflow and Airflow.**
 
@@ -74,7 +76,8 @@ kind create cluster --config kubernetes/kind-config.yaml
 python -m training.export_model --version v2 --out models
 docker build -t mlops-agent-api:1.0.0 .
 kind load docker-image mlops-agent-api:1.0.0 --name mlops-agent
-kubectl apply -f kubernetes/
+kubectl apply -f kubernetes/namespace.yaml -f kubernetes/configmap.yaml \
+  -f kubernetes/rbac.yaml -f kubernetes/service.yaml -f kubernetes/deployment.yaml
 bash scripts/agent_kubeconfig.sh              # writes kubeconfig-agent (24 h token)
 export KUBECONFIG="$PWD/kubeconfig-agent"     # the agent uses its restricted account
 ```
