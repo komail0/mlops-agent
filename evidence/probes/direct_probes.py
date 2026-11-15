@@ -1,4 +1,4 @@
-"""Rubric probes that go straight to the orchestrator (no language model involved)."""
+"""Probes that go straight to the orchestrator (no language model involved)."""
 
 import json
 import os
@@ -15,7 +15,7 @@ confirmations = ConfirmationManager(config.confirm_ttl_s)
 agent = Orchestrator(
     config, LLMClient(config), build_registry(config, confirmations), confirmations
 )
-marker = "/tmp/rubric_probe_marker"
+marker = "/tmp/probe_marker"
 
 CALLS = [
     (
