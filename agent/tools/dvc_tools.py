@@ -134,6 +134,16 @@ class DvcTools:
         tags = self._git(["tag", "--points-at", commit, "--list", "data-v*"]).split()
         return {"commit": commit, "date": date, "message": message, "tags": tags}
 
+    def _tags_with_md5(self, dvc_file: str, md5: str | None) -> list[str]:
+        found = []
+        for tag in sorted(self._git(["tag", "--list", "data-v*"]).split()):
+            try:
+                if self._at_rev(dvc_file, tag)["md5"] == md5:
+                    found.append(tag)
+            except ToolError:
+                continue
+        return found
+
     # ---- tools --------------------------------------------------------------
 
     def list_datasets(self) -> dict[str, Any]:
@@ -150,8 +160,11 @@ class DvcTools:
         current = self._parse((self.repo / dvc_file).read_text(encoding="utf-8"))
         change = self._last_change(dvc_file)
         dirty = bool(self._git(["status", "--porcelain", "--", dvc_file]).strip())
-        tags = change["tags"]
-        return {
+        # The version is the tag whose recorded hash equals the current hash. The last commit
+        # that touched the file is wrong after a checkout of another version.
+        matched = self._tags_with_md5(dvc_file, current["md5"])
+        tags = matched or ([] if dirty else change["tags"])
+        result = {
             "dvc_file": dvc_file,
             "md5": current["md5"],
             "size": current["size"],
@@ -163,6 +176,15 @@ class DvcTools:
             "head_commit": self._git(["rev-parse", "HEAD"]).strip(),
             "uncommitted_change": dirty,
         }
+        if dirty and matched:
+            result.update(
+                git_commit=self._rev(matched[0]),
+                committed_at=None,
+                commit_message=None,
+                note=f"{dvc_file} was checked out from {matched[0]} and is not committed; "
+                "the version and commit are those of that tag.",
+            )
+        return result
 
     def compare_versions(self, rev_a: str, rev_b: str, path: str | None = None) -> dict[str, Any]:
         dvc_file = self._resolve(path)

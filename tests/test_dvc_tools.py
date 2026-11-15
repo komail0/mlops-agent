@@ -159,3 +159,14 @@ def test_specs_expose_schemas_and_flag_mutation(repo):
     assert all(not s.mutating for n, s in specs.items() if n != "dvc_checkout_version")
     for spec in specs.values():
         assert spec.to_openai()["function"]["parameters"]["type"] == "object"
+
+
+def test_dataset_version_follows_checked_out_file(repo):
+    tools, _ = make_tools(repo)
+    assert tools.dataset_version()["version"] == "v2"
+    run(repo, "git", "checkout", "data-v1", "--", "data/d.csv.dvc")
+    info = tools.dataset_version()
+    assert info["version"] == "v1"
+    assert info["uncommitted_change"] is True
+    assert info["md5"] == md5_of(repo, "data-v1")
+    assert info["git_commit"] == run(repo, "git", "rev-parse", "data-v1").stdout.strip()
